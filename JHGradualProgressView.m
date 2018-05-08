@@ -36,13 +36,16 @@
 @property (assign,  nonatomic) CGFloat           width;
 @property (strong,  nonatomic) UIImage          *image;
 
+@property (nonatomic,  strong) NSArray *colors;
+
 @end
 
 @implementation JHGradualProgressView
 
-- (instancetype)initWithFrame:(CGRect)frame
+- (instancetype)initWithFrame:(CGRect)frame colors:(NSArray *)colors
 {
     if (self = [super initWithFrame:frame]) {
+        _colors = colors;
         [self jhSetupViews:frame];
     }
     return self;
@@ -83,9 +86,20 @@
     //渐变色
     CAGradientLayer *layer = [[CAGradientLayer alloc] init];
     layer.frame = CGRectMake(0, 0, iW, iH);
-    layer.colors = @[(__bridge id)[UIColor redColor].CGColor,
-                     (__bridge id)[UIColor yellowColor].CGColor,
-                     (__bridge id)[UIColor greenColor].CGColor];
+    layer.colors = ({
+        NSArray *colors = @[(__bridge id)[UIColor redColor].CGColor,
+                            (__bridge id)[UIColor yellowColor].CGColor,
+                            (__bridge id)[UIColor greenColor].CGColor];
+        if (_colors.count > 0) {
+            NSMutableArray *marr = @[].mutableCopy;
+            for (UIColor *color in _colors) {
+                [marr addObject:(__bridge id)[color CGColor]];
+            }
+            colors = marr;
+        }
+        colors;
+    });
+    
     //从左到右渐变
     layer.startPoint = CGPointMake(0, .5);
     layer.endPoint   = CGPointMake(1, .5);
