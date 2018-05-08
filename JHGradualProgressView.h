@@ -35,6 +35,8 @@
 
 @property (assign,  nonatomic) CGFloat   progress;  /**< value:0.0~1.0 */
 
-- (instancetype)initWithFrame:(CGRect)frame;
+@property (nonatomic,  strong,  readonly) NSArray *colors;
+
+- (instancetype)initWithFrame:(CGRect)frame colors:(NSArray *)colors;
 
 @end
