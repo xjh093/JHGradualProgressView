@@ -29,70 +29,107 @@
 
 #import "JHGradualProgressView.h"
 
+@implementation JHGradualProgressConfig
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _duration = 1.0;
+        _backColor = [UIColor colorWithRed:240.0/255 green:240.0/255 blue:245.0/255 alpha:1];
+        _borderWidth = 1/[UIScreen mainScreen].scale;
+        _borderColor = [UIColor blackColor];
+    }
+    return self;
+}
+
+@end
+
 @interface JHGradualProgressView()
 
-@property (strong,  nonatomic) UIView           *outView;
-@property (strong,  nonatomic) UIView           *inView;
-@property (assign,  nonatomic) CGFloat           width;
-@property (strong,  nonatomic) UIImage          *image;
+@property (nonatomic,  strong) CALayer *borderLayer;
+@property (nonatomic,  strong) CALayer *progressBackLayer;
+@property (nonatomic,  strong) UIView *progressView;
 
-@property (nonatomic,  strong) NSArray *colors;
+@property (nonatomic,  assign) CGFloat  progressViewWidth;
+
+@property (strong,  nonatomic) UIImage          *image;
 
 @end
 
 @implementation JHGradualProgressView
 
-- (instancetype)initWithFrame:(CGRect)frame colors:(NSArray *)colors
+#pragma mark -------------------------------------视图-------------------------------------------
+
+- (instancetype)initWithFrame:(CGRect)frame config:(JHGradualProgressConfig *)config;
 {
-    if (self = [super initWithFrame:frame]) {
-        _colors = colors;
-        [self jhSetupViews:frame];
+    self = [super initWithFrame:frame];
+    if (self) {
+        _config = config;
+        [self setupViews];
     }
     return self;
 }
 
-- (void)jhSetupViews:(CGRect)frame
+- (void)setupViews
 {
-    //外框
-    UIView *outView = [[UIView alloc] init];
-    outView.frame = CGRectMake(0, 0, frame.size.width, frame.size.height);
-    outView.layer.cornerRadius = frame.size.height*0.5;
-    outView.layer.borderWidth = 0.5;
-    outView.layer.borderColor = [[UIColor redColor] CGColor];
-    [self addSubview:outView];
-    _outView = outView;
+    [self.layer addSublayer:self.borderLayer];
+    [self.layer addSublayer:self.progressBackLayer];
+    [self addSubview:self.progressView];
     
-    //进度条
-    CGFloat iX = 1;
-    CGFloat iY = 1;
-    CGFloat iW = frame.size.width - 2*iX;
-    CGFloat iH = frame.size.height - 2*iY;
-    CGRect iframe = CGRectMake(iX, iY, 0, iH);
-    _width = iW;
+    if (_config.showGradualBorderColor && !_config.showAllColor) {
+        [self defaultGradualBorderColor];
+    }
     
-    //灰色底
-    UIView *grayView = [[UIView alloc] init];
-    grayView.frame = CGRectMake(iX, iY, iW, iH);
-    grayView.layer.cornerRadius = iH*0.5;
-    grayView.backgroundColor = [UIColor colorWithRed:240.0/255 green:240.0/255 blue:245.0/255 alpha:1];
-    [self addSubview:grayView];
-    
-    UIView *inView = [[UIView alloc] init];
-    inView.frame = iframe;
-    inView.layer.cornerRadius = iH*0.5;
-    [self addSubview:inView];
-    _inView = inView;
-    
+    //
+    CGRect frame = _progressView.frame;
+    frame.size.width = 0;
+    _progressView.frame = frame;
+}
+
+#pragma mark --- 默认的渐变边框颜色
+- (void)defaultGradualBorderColor
+{
+    UIGraphicsBeginImageContextWithOptions(_progressView.bounds.size, NO, 0.0);
+    [_progressView.layer renderInContext:UIGraphicsGetCurrentContext()];
+    _image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+}
+
+- (void)setProgress:(CGFloat)progress
+{
+    if (progress >= 0 && progress <= 1.0) {
+        CGRect frame = _progressView.frame;
+        frame.size.width = _progressViewWidth * progress;
+        
+        [UIView animateWithDuration:_config.duration animations:^{
+            _progressView.frame = frame;
+            if (_config.showAllColor) {
+                [_progressView.layer addSublayer:[self gradientLayerInRect:_progressView.bounds]];
+            }
+        } completion:^(BOOL finished) {
+            if (_config.showGradualBorderColor && !_config.showAllColor) {
+                UIColor *color = [self colorAtPixel:CGPointMake(frame.size.width, _image.size.height*0.5)];
+                _borderLayer.borderColor = [color CGColor];
+            }
+        }];
+    }
+}
+
+- (CAGradientLayer *)gradientLayerInRect:(CGRect)rect
+{
     //渐变色
     CAGradientLayer *layer = [[CAGradientLayer alloc] init];
-    layer.frame = CGRectMake(0, 0, iW, iH);
+    layer.frame = rect;
     layer.colors = ({
+        // default
         NSArray *colors = @[(__bridge id)[UIColor redColor].CGColor,
                             (__bridge id)[UIColor yellowColor].CGColor,
                             (__bridge id)[UIColor greenColor].CGColor];
-        if (_colors.count > 0) {
+        
+        if (_config.colors.count > 0) {
             NSMutableArray *marr = @[].mutableCopy;
-            for (UIColor *color in _colors) {
+            for (UIColor *color in _config.colors) {
                 [marr addObject:(__bridge id)[color CGColor]];
             }
             colors = marr;
@@ -103,33 +140,7 @@
     //从左到右渐变
     layer.startPoint = CGPointMake(0, .5);
     layer.endPoint   = CGPointMake(1, .5);
-    [inView.layer addSublayer:layer];
-
-    // 1.开启上下文
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(iW, iH), NO, 0.0);
-    // 2.将view的layer渲染到上下文
-    [inView.layer renderInContext:UIGraphicsGetCurrentContext()];
-    // 3.取出图片
-    _image = UIGraphicsGetImageFromCurrentImageContext();
-    // 4.结束上下文
-    UIGraphicsEndImageContext();
-    
-    //最后设置此属性，不然 _image画不出来！！！
-    inView.clipsToBounds = YES;
-}
-
-- (void)setProgress:(CGFloat)progress
-{
-    if (progress >= 0 && progress <= 1.0) {
-        CGRect frame = _inView.frame;
-        frame.size.width = _width * progress;
-        UIColor *color = [self colorAtPixel:CGPointMake(frame.size.width, _image.size.height*0.5)];
-        [UIView animateWithDuration:1 animations:^{
-            _inView.frame = frame;
-        } completion:^(BOOL finished) {
-            _outView.layer.borderColor = [color CGColor];
-        }];
-    }
+    return layer;
 }
 
 #pragma mark - 获取图片内点的颜色
@@ -170,6 +181,82 @@
     CGFloat blue  = (CGFloat)pixelData[2] / 255.0f;
     CGFloat alpha = (CGFloat)pixelData[3] / 255.0f;
     return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];
+}
+
+#pragma mark -------------------------------------事件-------------------------------------------
+
+#pragma mark -------------------------------------懒加载-----------------------------------------
+
+- (CALayer *)borderLayer{
+    if (!_borderLayer) {
+        CALayer *layer = [CALayer layer];
+        layer.frame = self.bounds;
+        layer.backgroundColor = [UIColor clearColor].CGColor;
+        layer.cornerRadius = CGRectGetHeight(self.bounds)*0.5;
+        _borderLayer = layer;
+        
+        if (_config.borderWidth > 0) {
+            layer.borderWidth = _config.borderWidth;
+            
+            if (_config.showAllColor) {
+                layer.borderColor = _config.borderColor.CGColor;
+            }
+            else if (_config.showGradualBorderColor) {
+                if (_config.colors.count > 0) {
+                    UIColor *color = _config.colors[0];
+                    layer.borderColor = color.CGColor;
+                }
+            }
+        }
+    }
+    return _borderLayer;
+}
+
+- (CALayer *)progressBackLayer{
+    if (!_progressBackLayer) {
+        CGRect frame = self.bounds;
+        if (_config.borderWidth > 0) {
+            CGFloat offset = 1/[UIScreen mainScreen].scale;
+            CGFloat inset = _config.borderWidth+offset;
+            frame = CGRectInset(self.bounds, inset, inset);
+        }
+        
+        CALayer *layer = [CALayer layer];
+        layer.frame = frame;
+        layer.backgroundColor = _config.backColor.CGColor;
+        layer.cornerRadius = CGRectGetHeight(layer.bounds)*0.5;
+        _progressBackLayer = layer;
+    }
+    return _progressBackLayer;
+}
+
+- (UIView *)progressView{
+    if (!_progressView) {
+        
+        CGRect frame = self.bounds;
+        if (_config.borderWidth > 0) {
+            CGFloat offset = 1/[UIScreen mainScreen].scale;
+            CGFloat inset = _config.borderWidth+offset;
+            frame = CGRectInset(self.bounds, inset, inset);
+        }
+        
+        UIView *view = [[UIView alloc] init];
+        view.frame = frame;
+        view.layer.cornerRadius = CGRectGetHeight(view.bounds)*0.5;
+        view.clipsToBounds = YES;
+        _progressView = view;
+        _progressViewWidth = CGRectGetWidth(view.bounds);
+        
+        if (_config.colors.count == 1) {
+            view.backgroundColor = _config.colors[0];
+        }else{
+            //渐变色
+            if (_config.showGradualBorderColor && !_config.showAllColor) {
+                [view.layer addSublayer:[self gradientLayerInRect:view.bounds]];
+            }
+        }
+    }
+    return _progressView;
 }
 
 @end
