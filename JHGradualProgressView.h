@@ -40,7 +40,7 @@
 @property (nonatomic,  strong) UIColor *borderColor;
 /// border width. default is 1/[UIScreen mainScreen].scale;
 @property (nonatomic,  assign) CGFloat  borderWidth;
-/// default is NO.
+/// default is YES.
 @property (nonatomic,  assign) BOOL  showGradualBorderColor;
 /// default is NO. if YES will use borderColor.
 @property (nonatomic,  assign) BOOL  showAllColor;
