@@ -1,7 +1,7 @@
 # JHGradualProgressView
 渐变进度条
 
-![image](https://github.com/xjh093/JHGradualProgressView/blob/master/image.png)
+![image](https://github.com/xjh093/JHGradualProgressView/blob/master/images.png)
 
 ### USE
 
