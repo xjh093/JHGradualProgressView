@@ -39,6 +39,7 @@
         _backColor = [UIColor colorWithRed:240.0/255 green:240.0/255 blue:245.0/255 alpha:1];
         _borderWidth = 1/[UIScreen mainScreen].scale;
         _borderColor = [UIColor blackColor];
+        _showGradualBorderColor = YES;
     }
     return self;
 }
