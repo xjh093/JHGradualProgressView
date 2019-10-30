@@ -31,12 +31,31 @@
 
 #import <UIKit/UIKit.h>
 
+@interface JHGradualProgressConfig : NSObject
+/// progress animation time. default is 1.0
+@property (nonatomic,  assign) CGFloat  duration;
+/// default is #F0F0F5.
+@property (nonatomic,  strong) UIColor *backColor;
+/// default is blackColor.
+@property (nonatomic,  strong) UIColor *borderColor;
+/// border width. default is 1/[UIScreen mainScreen].scale;
+@property (nonatomic,  assign) CGFloat  borderWidth;
+/// default is NO.
+@property (nonatomic,  assign) BOOL  showGradualBorderColor;
+/// default is NO. if YES will use borderColor.
+@property (nonatomic,  assign) BOOL  showAllColor;
+/// gradual colors.
+@property (nonatomic,  strong) NSArray *colors;
+@end
+
 @interface JHGradualProgressView : UIView
+/// 0.0~1.0
+@property (nonatomic,  assign) CGFloat  progress;
+/// configs
+@property (nonatomic,  strong,  readonly) JHGradualProgressConfig *config;
 
-@property (assign,  nonatomic) CGFloat   progress;  /**< value:0.0~1.0 */
-
-@property (nonatomic,  strong,  readonly) NSArray *colors;
-
-- (instancetype)initWithFrame:(CGRect)frame colors:(NSArray *)colors;
+- (instancetype)initWithFrame:(CGRect)frame NS_UNAVAILABLE;
+- (instancetype)initWithFrame:(CGRect)frame config:(JHGradualProgressConfig *)config;
 
 @end
+
