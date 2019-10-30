@@ -1,6 +1,6 @@
 # JHGradualProgressView
 渐变进度条
-(图片无法查看，请下载后查看)
+(若图片无法查看，请下载后查看)
 
 ![image](https://github.com/xjh093/JHGradualProgressView/blob/master/images.png)
 
